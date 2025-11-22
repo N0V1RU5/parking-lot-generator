@@ -5,22 +5,24 @@ import com.almasb.fxgl.app.GameSettings;
 import com.almasb.fxgl.dsl.FXGL;
 import com.almasb.fxgl.entity.Entity;
 import com.n0v1.game.model.Car;
-import com.sun.javafx.scene.control.InputField;
+import com.n0v1.game.model.CarSpawner;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.scene.control.TextInputControl;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 
 import javax.swing.*;
 import java.util.ArrayList;
 
-import static com.almasb.fxgl.dsl.FXGLForKtKt.getGameScene;
-
 public class ParkPCGApp extends GameApplication {
 
-    private ArrayList<Car> cars = new ArrayList<>();
-    public int carsNum = 10;
+    private final ArrayList<Car> cars = new ArrayList<>();
+    private int carsNum = 10;
+    private int seed = 1;
 
     @Override
     protected void initSettings(GameSettings gameSettings) {
@@ -36,31 +38,29 @@ public class ParkPCGApp extends GameApplication {
 
         FXGL.spawn("parkingLot", 0, 0);
 
-        Car.generateCars(carsNum, cars);
+        CarSpawner.generateCars(carsNum, cars, seed);
     }
 
     @Override
     protected void initUI() {
+        Label label = new Label("Trying to generate " + carsNum + " cars.");
+
+        // all useful buttons
         Button addCarButton = new Button("Add Car");
         Button deleteCarButton = new Button("Delete Car");
         Button generateAgainButton = new Button("Generate Again");
+
         TextField seedField = new TextField();
+        seedField.setPromptText("Seed (default is 1)");
 
-        Label label = new Label("Trying to generate " + carsNum + " cars.");
-        label.setTranslateX(180);
-        label.setTranslateY(540);
+        int HorizontalPos = 0;
+        int VerticalPos = 500;
 
-        addCarButton.setTranslateX(350);
-        addCarButton.setTranslateY(535);
+        HBox buttons = new HBox(10,deleteCarButton, label, addCarButton);
+        HBox lower = new HBox(10, seedField, generateAgainButton);
 
-        deleteCarButton.setTranslateX(70);
-        deleteCarButton.setTranslateY(535);
-
-        generateAgainButton.setTranslateX(200);
-        generateAgainButton.setTranslateY(565);
-
-        seedField.setTranslateX(330);
-        seedField.setTranslateY(565);
+        VBox panel = new VBox(10, buttons, lower);
+        panel.setStyle("-fx-padding: 20; -fx-background-color: rgba(0,0,0,0.3);");
 
         addCarButton.addEventHandler(MouseEvent.MOUSE_CLICKED, e -> {
             if(carsNum+1 <= 100){
@@ -74,7 +74,7 @@ public class ParkPCGApp extends GameApplication {
             cars.clear();
 
             //Generate new cars
-            Car.generateCars(carsNum, cars);
+            CarSpawner.generateCars(carsNum, cars, seed);
             label.setText("Trying to generate " + carsNum + " cars.");
             } else {
                 label.setText("Maximum cars is 100");
@@ -93,7 +93,7 @@ public class ParkPCGApp extends GameApplication {
                 cars.clear();
 
                 //Generate new cars
-                Car.generateCars(carsNum, cars);
+                CarSpawner.generateCars(carsNum, cars, seed);
                 label.setText("Trying to generate " + carsNum + " cars.");
             } else {
                 label.setText("Minimum cars is 1");
@@ -109,14 +109,29 @@ public class ParkPCGApp extends GameApplication {
             cars.clear();
 
             //Generate new cars
-            Car.generateCars(carsNum, cars);
+            CarSpawner.generateCars(carsNum, cars, seed);
         });
 
-        getGameScene().addUINodes(label, addCarButton, deleteCarButton, generateAgainButton, seedField);
+        seedField.textProperty().addListener(new ChangeListener<String>() {
+            @Override
+            public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
+                // if pressed key is not a number, change it to '1'
+                if(!newValue.matches("\\d*")) {
+                    seedField.setText(newValue.replaceAll("[^\\d]", "1"));
+                }
+                // rightness checking for seed
+                if(newValue.isEmpty() ||
+                        !newValue.matches("\\d*") ||
+                        newValue.length() > 9) {
+                    seed = 1;
+                } else {
+                    seed = Integer.parseInt(newValue);
+                }
+            }
+        });
 
+        FXGL.addUINode(panel, HorizontalPos, VerticalPos);
     }
-
-
 
     public static void main(String[] args) {
         launch(args);

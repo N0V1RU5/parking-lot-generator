@@ -10,6 +10,7 @@ import javafx.scene.shape.Rectangle;
 
 public class SimpleFactory implements EntityFactory {
 
+    // making a praking lot (GREY space)
     @Spawns("parkingLot")
     public Entity newPL(SpawnData data) {
         return FXGL.entityBuilder(data)

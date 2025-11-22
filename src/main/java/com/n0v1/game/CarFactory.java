@@ -14,6 +14,7 @@ public class CarFactory implements EntityFactory {
         CAR,
     }
 
+    // generate car entity as rectangle with width, height and color as in car
     @Spawns("car")
     public Entity newCar(SpawnData data) {
         Car car = (Car) data.get("car");
