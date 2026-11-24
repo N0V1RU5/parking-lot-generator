@@ -9,78 +9,63 @@ import java.util.Random;
 
 public class CarSpawner {
 
+    private static final int LOT_SIZE = 500;
+    private static final int MAX_ATTEMPTS = 300;
+
     public static void generateCars(int count, ArrayList<Car> cars, int seed) {
-        Random rnd = new Random();
-        rnd.setSeed(seed);
-        // pick random int aka x,y on screen
-        for(int i = 0; i <= count; i++){
-            int x = rnd.nextInt(500);
-            int y = rnd.nextInt(500);
-
+        // one seeded RNG for everything, so the same seed gives the same parking lot
+        Random rnd = new Random(seed);
+        for (int i = 0; i < count; i++) {
             // generate random car
-            Car car = CarSpawner.generateRandomCar();
-            // set cars position
-            car.setX(x);
-            car.setY(y);
+            Car car = CarSpawner.generateRandomCar(rnd);
 
-            // placing cars in an array + spawning cars
-            if(cars.isEmpty()){
-                cars.add(car);
-            } else {
-                // trying 300x to place a car in a random position
-                for (int again = 0; again < 300; again++){
-                    // if car is not colliding, add car to array of cars and spawn a car
-                    if (!CarSpawner.isCarColliding(car, cars)){
-                        cars.add(car);
-                        FXGL.spawn("car", new SpawnData(x, y).put("car", car));
-                        break;
-                    } else {
-                        // try new random position, and set it to a car, for next checking
-                        x = rnd.nextInt(500);
-                        y = rnd.nextInt(500);
-                        car.setX(x);
-                        car.setY(y);
-                    }
+            // trying 300x to place a car in a random position
+            for (int again = 0; again < MAX_ATTEMPTS; again++) {
+                // pick random int aka x,y on screen and set it to a car
+                int x = rnd.nextInt(LOT_SIZE);
+                int y = rnd.nextInt(LOT_SIZE);
+                car.setX(x);
+                car.setY(y);
+
+                // if car is not colliding, add car to array of cars and spawn a car
+                if (!CarSpawner.isCarColliding(car, cars)) {
+                    cars.add(car);
+                    FXGL.spawn("car", new SpawnData(x, y).put("car", car));
+                    break;
                 }
             }
         }
     }
 
-    public static boolean isCarColliding(Car car,ArrayList cars){
-        boolean collided = false;
-        for (Object o : cars) {
-            Car car1 = (Car) o;
-            // x,y postitions of a car we are checking
-            double carx1 = car.getX();
-            double cary1 = car.getY();
-            double carx2 = car.getX() + car.getWidth();
-            double cary2 = car.getY() + car.getHeight();
+    public static boolean isCarColliding(Car car, ArrayList<Car> cars) {
+        // x,y positions of a car we are checking
+        double carx1 = car.getX();
+        double cary1 = car.getY();
+        double carx2 = car.getX() + car.getWidth();
+        double cary2 = car.getY() + car.getHeight();
 
+        // car has to be fully inside the parking lot
+        if (carx1 < 0 || carx2 > LOT_SIZE || cary1 < 0 || cary2 > LOT_SIZE) {
+            return true;
+        }
+
+        for (Car car1 : cars) {
             // x,y positions of a car from array of already placed cars
             double car1x1 = car1.getX();
             double car1y1 = car1.getY();
             double car1x2 = car1.getX() + car1.getWidth();
             double car1y2 = car1.getY() + car1.getHeight();
 
-            // checking conditions
-            boolean cond1 = (carx1 <= car1x2);
-            boolean cond2 = (carx2 >= car1x1);
-            boolean cond3 = (cary1 <= car1y2);
-            boolean cond4 = (cary2 >= car1y1);
-            boolean cond5 = (carx1 < 0 || carx2 > 500 ||
-                    cary1 < 0 || cary2 > 500);
-
-            if ((cond1 && cond2 && cond3 && cond4) || cond5 ) {
-                collided = true;
-                break;
+            // AABB overlap
+            if (carx1 <= car1x2 && carx2 >= car1x1 && cary1 <= car1y2 && cary2 >= car1y1) {
+                return true;
             }
         }
-        return collided;
+        return false;
     }
 
 
-    public static Car generateRandomCar(){
-        Random rnd = new Random();
+    public static Car generateRandomCar(Random rnd) {
         // pick random type of an car
         final String[] types = {"sedan", "SUV", "van", "sport"};
         String type = types[rnd.nextInt(types.length)];
@@ -88,7 +73,7 @@ public class CarSpawner {
         double height = 5;
 
         // set car type (width and height)
-        switch (type){
+        switch (type) {
             case "sedan":
                 width = 30;
                 height = 50;
@@ -106,9 +91,9 @@ public class CarSpawner {
                 height = 44;
                 break;
         }
-        // pick random color for car
-        Color color = Color.rgb(rnd.nextInt(255), rnd.nextInt(255), rnd.nextInt(255));
-        if (color == Color.GREY){
+        // pick random color for car (grey would blend into the parking lot)
+        Color color = Color.rgb(rnd.nextInt(256), rnd.nextInt(256), rnd.nextInt(256));
+        if (color.equals(Color.GREY)) {
             color = Color.HOTPINK;
         }
         double rotation = 0; //rnd.nextInt(360);
